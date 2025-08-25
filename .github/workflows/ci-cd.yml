@@ -1,12 +1,15 @@
 name: CI/CD Pipeline
+
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
+
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
+
     services:
       postgres:
         image: postgres:17
@@ -30,10 +33,13 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: 1.24
+
       - name: 📦 Install dependencies
         run: go mod download
+
       - name: ✅ Run tests
         run: go test ./...
+
       - name: 🐳 Login to DockerHub
         uses: docker/login-action@v3
         with:
@@ -46,3 +52,28 @@ jobs:
           context: .
           push: true
           tags: ${{ secrets.DOCKER_REPO }}:latest
+
+      - name: 🚀 Deploy to VPS via SSH
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_KEY }}
+          script: |
+            echo "📡 Подключились к VPS ${{ secrets.VPS_HOST }}"
+
+            cd ${{ secrets.VPS_PATH }}
+
+            # Клонируем проект если его нет
+            if [ ! -d ".git" ]; then
+              git clone https://github.com/${{ github.repository }} .
+            else
+              git pull origin main
+            fi
+
+            echo "🔄 Обновляем и перезапускаем сервис..."
+
+            docker-compose pull
+            docker-compose up -d --build
+
+            echo "✅ Деплой завершён"
