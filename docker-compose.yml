@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   app:
-    build: .
+    image: almuko/jonathan:latest
     ports:
       - "9090:9090"
     env_file: .env
