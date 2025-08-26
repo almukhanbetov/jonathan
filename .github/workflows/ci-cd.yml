@@ -73,7 +73,8 @@ jobs:
 
             echo "🔄 Обновляем и перезапускаем сервис..."
 
+            docker-compose down --remove-orphans
             docker-compose pull
-            docker-compose up -d --build
+            docker-compose up -d --build --pull always
 
             echo "✅ Деплой завершён"
